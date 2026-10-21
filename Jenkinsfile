@@ -1,69 +1,41 @@
 pipeline {
-
-    agent any
-
-    stages {
-
-        stage('Build') {
-            steps {
-                echo 'Building application...'
-
-                sh '''
-                    python3 -m venv venv
-                    . venv/bin/activate
-                    pip install -r requirements.txt
-                '''
-            }
+    agent {
+        docker {
+            image 'python:3.10-slim'
         }
-
-        stage('Test') {
-            steps {
-                echo 'Running automated tests...'
-
-                sh '''
-                    . venv/bin/activate
-                    pytest
-                '''
-            }
-        }
-
-        stage('Docker Build') {
-            steps {
-                echo 'Building Docker image...'
-
-                sh '''
-                    docker build -t cicd-demo:${BUILD_NUMBER} .
-                    docker tag cicd-demo:${BUILD_NUMBER} cicd-demo:latest
-                '''
-            }
-        }
-
-        stage('Deploy') {
-            steps {
-                echo 'Deploying application...'
-
-                sh '''
-                    docker rm -f cicd-demo || true
-
-                    docker run -d \
-                    --name cicd-demo \
-                    -p 5000:5000 \
-                    cicd-demo:latest
-                '''
-            }
-        }
-
     }
-
-    post {
-
-        success {
-            echo 'Deployment successful!'
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
         }
-
-        failure {
-            echo 'Pipeline failed!'
+        stage('Run Unit Tests') {
+            steps {
+                sh '''
+                    python -m venv venv
+                    ./venv/bin/pip install --no-cache-dir -r requirements.txt
+                    ./venv/bin/pytest test_app.py
+                '''
+            }
         }
-
+        stage('SonarQube Analysis') {
+            steps {
+                withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    sh '''
+                        docker run --rm \
+                          -v "$(pwd):/usr/src" \
+                          sonarqube/sonar-scanner \
+                          -Dsonar.host.url=http://172.17.0.1:9000 \
+                          -Dsonar.token=$SONAR_TOKEN
+                    '''
+                }
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t flask-cicd-app:latest .'
+            }
+        }
     }
 }
