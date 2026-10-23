@@ -10,9 +10,9 @@ pipeline {
             }
         }
 
-        stage('Build') {
+        stage('Install Dependencies') {
             steps {
-                echo 'Building application...'
+                echo 'Installing Python dependencies...'
 
                 sh '''
                     python3 -m venv venv
