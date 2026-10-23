@@ -22,7 +22,7 @@ pipeline {
             }
         }
 
-        stage('Test') {
+        stage('Unit Test') {
             steps {
                 echo 'Running automated tests...'
 
