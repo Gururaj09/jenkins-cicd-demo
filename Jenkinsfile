@@ -1,14 +1,19 @@
 pipeline {
+
     agent any
+
     tools {
         sonarQube 'SonarScanner'
     }
+
     stages {
+
         stage('Checkout') {
             steps {
                 checkout scm
             }
         }
+
         stage('Build') {
             steps {
                 echo 'Building application...'
@@ -69,15 +74,16 @@ pipeline {
                     docker rm -f cicd-demo || true
 
                     docker run -d \
-                    --name cicd-demo \
-                    -p 5000:5000 \
-                    cicd-demo:latest
+                        --name cicd-demo \
+                        -p 5000:5000 \
+                        cicd-demo:latest
                 '''
             }
         }
     }
 
     post {
+
         success {
             echo 'Deployment successful!'
         }
@@ -87,4 +93,3 @@ pipeline {
         }
     }
 }
-}   
